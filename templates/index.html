@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Recognition System</title>
+    <style>
+        video {
+            max-width: 100%;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <h1>Face Recognition System</h1>
+    <input type="text" id="identifier" placeholder="Enter identifier" />
+    <button onclick="registerFace()">Register Face</button>
+    <button onclick="startVideo()">Start Face Validation</button>
+    <div id="status"></div>
+    <div id="video-container">
+        <video id="video" width="640" height="480" autoplay></video>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.min.js"></script>
+    <script>
+        var socket = io.connect("http://localhost:5000");
+
+        // Register face
+        function registerFace() {
+            var identifier = document.getElementById("identifier").value;
+            if (!identifier) {
+                alert("Please enter an identifier.");
+                return;
+            }
+            socket.emit("register_face", { identifier: identifier });
+
+            socket.on("status_update", function(data) {
+                document.getElementById("status").innerHTML = data.message;
+            });
+
+            socket.on("model_saved", function(data) {
+                document.getElementById("status").innerHTML = data.message;
+            });
+        }
+
+        // Start video stream for face validation
+        function startVideo() {
+            var identifier = document.getElementById("identifier").value;
+            if (!identifier) {
+                alert("Please enter an identifier.");
+                return;
+            }
+
+            socket.emit("start_video", { identifier: identifier });
+
+            socket.on("video_frame", function(data) {
+                var videoElement = document.getElementById("video");
+                var img = new Image();
+                img.src = "data:image/jpeg;base64," + btoa(String.fromCharCode.apply(null, new Uint8Array(data.frame)));
+                videoElement.src = img.src;
+            });
+
+            socket.on("face_validated", function(data) {
+                document.getElementById("status").innerHTML = data.message;
+            });
+
+            socket.on("face_validation_error", function(data) {
+                document.getElementById("status").innerHTML = data.message;
+            });
+        }
+    </script>
+</body>
+</html>
